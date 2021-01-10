@@ -10,6 +10,7 @@
 
 #define DIG_IO_LIST \
     DIG_IO_ENTRY(test_in,     GPIOB, GPIO5,  PinMode::INPUT_FLT)   \
-    DIG_IO_ENTRY(led_out,     GPIOC, GPIO12, PinMode::OUTPUT)      \
+    DIG_IO_ENTRY(led_out,     GPIOC, GPIO13, PinMode::OUTPUT)      
+   
 
 #endif // PinMode_PRJ_H_INCLUDED

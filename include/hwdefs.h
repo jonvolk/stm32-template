@@ -32,10 +32,16 @@
 #define TERM_USART_DR      USART3_DR
 #define TERM_BUFSIZE       128
 
-//Address of parameter block in flash
+/*/Address of parameter block in flash  F103
 #define FLASH_PAGE_SIZE 1024
 #define PARAM_ADDRESS 0x0801FC00
 #define PARAM_BLKSIZE FLASH_PAGE_SIZE
 #define CANMAP_ADDRESS 0x0801F800
+*/
+
+#define FLASH_PAGE_SIZE 2048
+#define PARAM_ADDRESS 0x0801F800
+#define PARAM_BLKSIZE FLASH_PAGE_SIZE
+#define CANMAP_ADDRESS 0x0801F000
 
 #endif // HWDEFS_H_INCLUDED

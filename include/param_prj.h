@@ -57,7 +57,8 @@
     VALUE_ENTRY(version,     VERSTR,  2001 ) \
     VALUE_ENTRY(lasterr,     errorListString,  2002 ) \
     VALUE_ENTRY(testain,     "dig",   2003 ) \
-    VALUE_ENTRY(cpuload,     "%",     2004 )
+    VALUE_ENTRY(cpuload,     "%",     2004 ) \
+    VALUE_ENTRY(testMsg,      "val",  2005)
 
 
 /***** Enum String definitions *****/

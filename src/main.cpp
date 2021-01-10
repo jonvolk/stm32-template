@@ -35,8 +35,9 @@
 #include "printf.h"
 #include "stm32scheduler.h"
 
-static Stm32Scheduler* scheduler;
-static Can* can;
+static Stm32Scheduler *scheduler;
+static Can *can;
+static Can *can2;
 
 //sample 100ms task
 static void Ms100Task(void)
@@ -61,11 +62,25 @@ static void Ms100Task(void)
       can->SendAll();
 }
 
+void can_send(void)
+{
+   for (int i = 0; i < 2040; i++)
+   {
+      Param::SetInt(Param::testMsg, i);
+   }
+
+   can->AddSend(Param::testMsg, 0x123, 0, 16, 1);
+   can2->AddSend(Param::testMsg, 0x123, 0, 16, 1);
+   //DigIo::led_out.Set();
+}
+
 //sample 10 ms task
 static void Ms10Task(void)
 {
    //Set timestamp of error message
    ErrorMessage::SetTime(rtc_get_counter_val());
+
+   
 
    if (DigIo::test_in.Get())
    {
@@ -82,20 +97,26 @@ static void Ms10Task(void)
       can->SendAll();
 }
 
+static void Ms500Task(void)
+{
+
+   can_send();
+   
+}
 /** This function is called when the user changes a parameter */
 extern void parm_Change(Param::PARAM_NUM paramNum)
 {
    switch (paramNum)
-   {
+
    default:
       //Handle general parameter changes here. Add paramNum labels for handling specific parameters
       break;
-   }
 }
+
 
 //Whichever timer(s) you use for the scheduler, you have to
 //implement their ISRs here and call into the respective scheduler
-extern "C" void tim2_isr(void)
+extern "C" void tim3_isr(void)
 {
    scheduler->Run();
 }
@@ -106,22 +127,24 @@ extern "C" int main(void)
    rtc_setup();
    ANA_IN_CONFIGURE(ANA_IN_LIST);
    DIG_IO_CONFIGURE(DIG_IO_LIST);
-   AnaIn::Start(); //Starts background ADC conversion via DMA
+   AnaIn::Start();             //Starts background ADC conversion via DMA
    write_bootloader_pininit(); //Instructs boot loader to initialize certain pins
 
-   usart_setup(); //Initializes UART3 with DMA for use by the terminal (see below)
-   tim_setup(); //Sample init of a timer
-   nvic_setup(); //Set up some interrupts
-   term_Init(); //Initialize terminal
-   parm_load(); //Load stored parameters
+   usart_setup();                  //Initializes UART3 with DMA for use by the terminal (see below)
+   tim_setup();                    //Sample init of a timer
+   nvic_setup();                   //Set up some interrupts
+   term_Init();                    //Initialize terminal
+   parm_load();                    //Load stored parameters
    parm_Change(Param::PARAM_LAST); //Call callback one for general parameter propagation
 
-   Stm32Scheduler s(TIM2); //We never exit main so it's ok to put it on stack
+   Stm32Scheduler s(TIM3); //We never exit main so it's ok to put it on stack
    scheduler = &s;
    //Initialize CAN1, including interrupts. Clock must be enabled in clock_setup()
    Can c(CAN1, (Can::baudrates)Param::GetInt(Param::canspeed));
+   Can c2(CAN2, (Can::baudrates)Param::GetInt(Param::canspeed));
    //store a pointer for easier access
    can = &c;
+   can2 = &c2;
 
    //Up to four tasks can be added to each timer scheduler
    //AddTask takes a function pointer and a calling interval in milliseconds.
@@ -130,6 +153,7 @@ extern "C" int main(void)
    //There you can also configure the priority of the scheduler over other interrupts
    s.AddTask(Ms10Task, 10);
    s.AddTask(Ms100Task, 100);
+   s.AddTask(Ms500Task, 500);
 
    //backward compatibility, version 4 was the first to support the "stream" command
    Param::SetInt(Param::version, 4);
@@ -138,8 +162,8 @@ extern "C" int main(void)
    //All other processing takes place in the scheduler or other interrupt service routines
    //The terminal has lowest priority, so even loading it down heavily will not disturb
    //our more important processing routines.
+
    term_Run();
 
    return 0;
 }
-

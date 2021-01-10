@@ -50,8 +50,9 @@ void clock_setup(void)
    rcc_periph_clock_enable(RCC_GPIOD);
    rcc_periph_clock_enable(RCC_USART3);
    rcc_periph_clock_enable(RCC_TIM2); //Scheduler
+   rcc_periph_clock_enable(RCC_TIM3); //actual scheduler LED
    rcc_periph_clock_enable(RCC_TIM4); //Overcurrent / AUX PWM
-   rcc_periph_clock_enable(RCC_DMA1);  //ADC, Encoder and UART receive
+   rcc_periph_clock_enable(RCC_DMA1); //ADC, Encoder and UART receive
    rcc_periph_clock_enable(RCC_ADC1);
    rcc_periph_clock_enable(RCC_CRC);
    rcc_periph_clock_enable(RCC_AFIO); //CAN
@@ -68,7 +69,7 @@ void write_bootloader_pininit()
    struct pincommands *flashCommands = (struct pincommands *)PINDEF_ADDRESS;
    struct pincommands commands;
 
-   memset32((int*)&commands, 0, PINDEF_NUMWORDS);
+   memset32((int *)&commands, 0, PINDEF_NUMWORDS);
 
    //!!! Customize this to match your project !!!
    //Here we specify that PC13 be initialized to ON
@@ -83,7 +84,7 @@ void write_bootloader_pininit()
    commands.pindef[1].level = 0;
 
    crc_reset();
-   uint32_t crc = crc_calculate_block(((uint32_t*)&commands), PINDEF_NUMWORDS);
+   uint32_t crc = crc_calculate_block(((uint32_t *)&commands), PINDEF_NUMWORDS);
    commands.crc = crc;
 
    if (commands.crc != flashCommands->crc)
@@ -94,7 +95,7 @@ void write_bootloader_pininit()
       //Write flash including crc, therefor <=
       for (uint32_t idx = 0; idx <= PINDEF_NUMWORDS; idx++)
       {
-         uint32_t* pData = ((uint32_t*)&commands) + idx;
+         uint32_t *pData = ((uint32_t *)&commands) + idx;
          flash_program_word(PINDEF_ADDRESS + idx * sizeof(uint32_t), *pData);
       }
       flash_lock();
@@ -107,7 +108,7 @@ void write_bootloader_pininit()
 void usart_setup(void)
 {
    gpio_set_mode(TERM_USART_TXPORT, GPIO_MODE_OUTPUT_50_MHZ,
-               GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, TERM_USART_TXPIN);
+                 GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, TERM_USART_TXPIN);
 
    usart_set_baudrate(TERM_USART, USART_BAUDRATE);
    usart_set_databits(TERM_USART, 8);
@@ -140,8 +141,11 @@ void usart_setup(void)
 */
 void nvic_setup(void)
 {
-   nvic_enable_irq(NVIC_TIM2_IRQ); //Scheduler
+   nvic_enable_irq(NVIC_TIM2_IRQ);             //Scheduler
    nvic_set_priority(NVIC_TIM2_IRQ, 0xe << 4); //second lowest priority
+
+   nvic_enable_irq(NVIC_TIM3_IRQ);      //Scheduler on tim3
+   nvic_set_priority(NVIC_TIM3_IRQ, 0); //Highest priority
 }
 
 void rtc_setup()
@@ -190,4 +194,3 @@ void tim_setup()
    /** setup gpio */
    gpio_set_mode(GPIOB, GPIO_MODE_OUTPUT_50_MHZ, GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO7 | GPIO8 | GPIO9);
 }
-
